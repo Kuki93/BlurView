@@ -38,6 +38,7 @@ final class BlockingBlurController implements BlurController {
     private float roundingHeightScaleFactor = 1f;
 
     private BlurAlgorithm blurAlgorithm;
+    @Nullable
     private Canvas internalCanvas;
     private Bitmap internalBitmap;
 
@@ -130,7 +131,7 @@ final class BlockingBlurController implements BlurController {
 
     @SuppressWarnings("WeakerAccess")
     void updateBlur() {
-        if (!blurEnabled) {
+        if (!blurEnabled || internalCanvas == null) {
             return;
         }
 
@@ -171,7 +172,6 @@ final class BlockingBlurController implements BlurController {
                 init(measuredWidth, measuredHeight);
             }
 
-            @SuppressWarnings("deprecation")
             void legacyRemoveOnGlobalLayoutListener() {
                 blurView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
             }
@@ -195,6 +195,10 @@ final class BlockingBlurController implements BlurController {
      * Set up matrix to draw starting from blurView's position
      */
     private void setupInternalCanvasMatrix() {
+        if (internalCanvas == null) {
+            return;
+        }
+
         rootView.getLocationOnScreen(rootLocation);
         blurView.getLocationOnScreen(blurViewLocation);
 
@@ -231,6 +235,9 @@ final class BlockingBlurController implements BlurController {
     }
 
     private void blurAndSave() {
+        if (internalCanvas == null) {
+            return;
+        }
         internalBitmap = blurAlgorithm.blur(internalBitmap, blurRadius);
         if (!blurAlgorithm.canModifyBitmap()) {
             internalCanvas.setBitmap(internalBitmap);
@@ -281,12 +288,7 @@ final class BlockingBlurController implements BlurController {
 
     @Override
     public BlurViewFacade setBlurEnabled(final boolean enabled) {
-        blurView.post(new Runnable() {
-            @Override
-            public void run() {
-                setBlurEnabledInternal(enabled);
-            }
-        });
+        setBlurEnabledInternal(enabled);
         return this;
     }
 
@@ -299,12 +301,7 @@ final class BlockingBlurController implements BlurController {
     }
 
     public BlurViewFacade setBlurAutoUpdate(final boolean enabled) {
-        blurView.post(new Runnable() {
-            @Override
-            public void run() {
-                setBlurAutoUpdateInternal(enabled);
-            }
-        });
+        setBlurAutoUpdateInternal(enabled);
         return this;
     }
 
